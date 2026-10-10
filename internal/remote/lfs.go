@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/rishiyaduwanshi/boiler/internal/constants"
@@ -95,10 +96,14 @@ func gitAuthEnv(rawURL string) []string {
 	if key == "" {
 		return nil
 	}
+
+	countStr := os.Getenv("GIT_CONFIG_COUNT")
+	count, _ := strconv.Atoi(countStr)
+
 	return []string{
-		"GIT_CONFIG_COUNT=1",
-		"GIT_CONFIG_KEY_0=http.extraHeader",
-		fmt.Sprintf("GIT_CONFIG_VALUE_0=%s: %s", key, value),
+		fmt.Sprintf("GIT_CONFIG_COUNT=%d", count+1),
+		fmt.Sprintf("GIT_CONFIG_KEY_%d=http.extraHeader", count),
+		fmt.Sprintf("GIT_CONFIG_VALUE_%d=%s: %s", count, key, value),
 	}
 }
 
