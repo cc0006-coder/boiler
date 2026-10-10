@@ -445,7 +445,7 @@ var bitbucketHosts = map[string]bool{
 //	BITBUCKET_TOKEN → bitbucket.org, www.bitbucket.org
 func authHeaderForURL(rawURL string) (key, value string) {
 	parsed, err := url.Parse(rawURL)
-	if err != nil {
+	if err != nil || parsed.Scheme != "https" {
 		return "", ""
 	}
 	host := strings.ToLower(parsed.Hostname())

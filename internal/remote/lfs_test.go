@@ -239,6 +239,9 @@ func TestIsAbbreviatedCommitSHA(t *testing.T) {
 }
 
 func TestCloneGitRepositoryAbbreviatedCommitSHA(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("GITLAB_TOKEN", "")
+	t.Setenv("BITBUCKET_TOKEN", "")
 	origin := t.TempDir()
 	runTestGit(t, "init", origin)
 	runTestGit(t, "-C", origin, "config", "user.name", "Boiler Test")
@@ -290,6 +293,9 @@ func TestCloneGitRepositoryAbbreviatedCommitSHA(t *testing.T) {
 }
 
 func TestResolveAbbreviatedCommitProviders(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("GITLAB_TOKEN", "")
+	t.Setenv("BITBUCKET_TOKEN", "")
 	ref := "abcdef0"
 	fullSHA := ref + strings.Repeat("1", 33)
 	tests := []struct {

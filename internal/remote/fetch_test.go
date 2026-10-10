@@ -162,10 +162,18 @@ func TestAuthHeaderForURL(t *testing.T) {
 			url:  "://bad-url",
 			env:  map[string]string{"GITHUB_TOKEN": "gh-tok"},
 		},
+		{
+			name: "http url instead of https",
+			url:  "http://github.com/owner/repo",
+			env:  map[string]string{"GITHUB_TOKEN": "gh-tok"},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("GITHUB_TOKEN", "")
+			t.Setenv("GITLAB_TOKEN", "")
+			t.Setenv("BITBUCKET_TOKEN", "")
 			for k, v := range tt.env {
 				t.Setenv(k, v)
 			}
