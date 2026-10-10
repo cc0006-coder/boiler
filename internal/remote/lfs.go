@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/rishiyaduwanshi/boiler/internal/constants"
@@ -86,8 +87,29 @@ func gitCloneArgs(cloneURL, ref, dest string) []string {
 	return []string{"clone", "--depth", "1", "--branch", ref, "--single-branch", cloneURL, dest}
 }
 
+// gitAuthEnv returns environment variables that inject a provider Bearer token into
+// the HTTPS transport for rawURL via http.extraHeader. Returns nil for
+// public URLs or when no matching provider token is set in the environment.
+// Using environment variables prevents credentials from being logged in process lists.
+func gitAuthEnv(rawURL string) []string {
+	key, value := authHeaderForURL(rawURL)
+	if key == "" {
+		return nil
+	}
+
+	countStr := os.Getenv("GIT_CONFIG_COUNT")
+	count, _ := strconv.Atoi(countStr)
+
+	return []string{
+		fmt.Sprintf("GIT_CONFIG_COUNT=%d", count+1),
+		fmt.Sprintf("GIT_CONFIG_KEY_%d=http.extraHeader", count),
+		fmt.Sprintf("GIT_CONFIG_VALUE_%d=%s: %s", count, key, value),
+	}
+}
+
 func cloneGitRepository(p Provider, owner, repo, cloneURL, ref, dest string) error {
-	if err := runGit(gitCloneArgs(cloneURL, ref, dest)...); err == nil {
+	authEnv := gitAuthEnv(cloneURL)
+	if err := runGitWithEnv(authEnv, gitCloneArgs(cloneURL, ref, dest)...); err == nil {
 		return nil
 	}
 	if isAbbreviatedCommitSHA(ref) {
@@ -163,6 +185,7 @@ func isHexObjectID(ref string) bool {
 }
 
 func cloneGitCommit(cloneURL, ref, dest string) error {
+	authEnv := gitAuthEnv(cloneURL)
 	steps := []struct {
 		name string
 		args []string
@@ -174,7 +197,7 @@ func cloneGitCommit(cloneURL, ref, dest string) error {
 	}
 
 	for _, step := range steps {
-		if err := runGit(step.args...); err != nil {
+		if err := runGitWithEnv(authEnv, step.args...); err != nil {
 			return fmt.Errorf("git %s failed: %w", step.name, err)
 		}
 	}
@@ -182,7 +205,14 @@ func cloneGitCommit(cloneURL, ref, dest string) error {
 }
 
 func runGit(args ...string) error {
+	return runGitWithEnv(nil, args...)
+}
+
+func runGitWithEnv(env []string, args ...string) error {
 	cmd := exec.Command("git", args...)
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
