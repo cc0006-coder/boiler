@@ -235,4 +235,5 @@ Apache-2.0 © [Abhinav Prakash](https://github.com/rishiyaduwanshi)
 
 [⭐ Star on GitHub](https://github.com/rishiyaduwanshi/boiler) • [📖 Docs](https://boiler.iamabhinav.dev)
 
+[![Greptile: The War on Bugs](https://www.greptile.com/badge.svg)](https://www.greptile.com/?utm_source=oss_badge&utm_medium=readme&utm_campaign=greptile_for_open_source)
 </div>
