@@ -42,7 +42,9 @@ Stacks require boiler.stack.json with:
 If a stack version already exists, you'll be prompted to overwrite.
 
 Use --command (or --cmd) to store a .bl script in the global commands directory
-(~/.boiler/commands/) so it can be run with 'bl new <script_name>'.`,
+(~/.boiler/commands/) so it can be run with 'bl new <script_name>'.
+Existing global commands are refused unless --force (or -f) is supplied.
+The --force flag is only supported with --command.`,
 	Example: `  # Store current directory as stack
   bl store
 
@@ -64,9 +66,16 @@ Use --command (or --cmd) to store a .bl script in the global commands directory
   bl store ./config.js --name dbConfig.js
 
   # Store a .bl script as a runnable command
-  bl store ./route.bl --command`,
+  bl store ./route.bl --command
+
+  # Replace an existing global command
+  bl store ./route.bl --command --force`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		if storeForce && !storeAsCommand {
+			fmt.Fprintln(os.Stderr, "Error: --force requires --command")
+			os.Exit(1)
+		}
 		path := "."
 		if len(args) > 0 {
 			path = args[0]
@@ -295,6 +304,7 @@ var (
 	storeAsSnippet bool
 	storeAsStack   bool
 	storeAsCommand bool
+	storeForce     bool
 )
 
 func init() {
@@ -303,6 +313,7 @@ func init() {
 	Cmd.Flags().BoolVarP(&storeAsStack, "stack", "k", false, "Force store as stack")
 	Cmd.Flags().BoolVar(&storeAsCommand, "command", false, "Store .bl file in the global commands directory (~/.boiler/commands/)")
 	Cmd.Flags().BoolVar(&storeAsCommand, "cmd", false, "Alias for --command")
+	Cmd.Flags().BoolVarP(&storeForce, "force", "f", false, "Overwrite an existing global command (requires --command)")
 }
 
 var (
@@ -334,6 +345,18 @@ func storeCommand(path string) error {
 	}
 
 	destPath := filepath.Join(globalCommandsDir, filepath.Base(path))
+	if destInfo, err := os.Stat(destPath); err == nil {
+		sourceInfo, err := os.Stat(path)
+		if err != nil {
+			return fmt.Errorf("failed to inspect command: %w", err)
+		}
+		if os.SameFile(sourceInfo, destInfo) {
+			return fmt.Errorf("source and destination are the same file")
+		}
+	}
+	if utils.FileExists(destPath) && !storeForce {
+		return fmt.Errorf(utils.ErrDestAlreadyExists, destPath)
+	}
 	if err := utils.CopyFile(path, destPath); err != nil {
 		return fmt.Errorf("failed to copy command: %w", err)
 	}
