@@ -26,7 +26,7 @@ Stacks require boiler.stack.json with:
 
 If a stack version already exists, you'll be prompted to overwrite.
 
-Use --command (or --cmd) to store a .bl script in the global commands directory
+Use --command, --cmd or -c to store a .bl script in the global commands directory
 (~/.boiler/commands/) so it can be run with 'bl new `<script_name>`'.
 Existing global commands are refused unless --force (or -f) is supplied.
 The --force flag is only supported with --command.
@@ -69,7 +69,7 @@ bl store [path] [flags]
 
 ```
       --cmd           Alias for --command
-      --command       Store .bl file in the global commands directory (~/.boiler/commands/)
+  -c, --command       Store .bl file in the global commands directory (~/.boiler/commands/)
   -f, --force         Overwrite an existing global command (requires --command)
   -h, --help          help for store
   -m, --name string   Name for the resource (auto-detected from path if not provided)

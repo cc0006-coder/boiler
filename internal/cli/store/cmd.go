@@ -2,13 +2,14 @@ package store
 
 import (
 	"fmt"
-	"github.com/rishiyaduwanshi/boiler/internal/config"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rishiyaduwanshi/boiler/internal/config"
 	"github.com/rishiyaduwanshi/boiler/internal/models"
 	"github.com/rishiyaduwanshi/boiler/internal/store"
 	"github.com/rishiyaduwanshi/boiler/internal/utils"
@@ -41,7 +42,7 @@ Stacks require boiler.stack.json with:
 
 If a stack version already exists, you'll be prompted to overwrite.
 
-Use --command (or --cmd) to store a .bl script in the global commands directory
+Use --command, --cmd or -c to store a .bl script in the global commands directory
 (~/.boiler/commands/) so it can be run with 'bl new <script_name>'.
 Existing global commands are refused unless --force (or -f) is supplied.
 The --force flag is only supported with --command.`,
@@ -311,7 +312,7 @@ func init() {
 	Cmd.Flags().StringVarP(&storeName, "name", "m", "", "Name for the resource (auto-detected from path if not provided)")
 	Cmd.Flags().BoolVarP(&storeAsSnippet, "snippet", "n", false, "Force store as snippet")
 	Cmd.Flags().BoolVarP(&storeAsStack, "stack", "k", false, "Force store as stack")
-	Cmd.Flags().BoolVar(&storeAsCommand, "command", false, "Store .bl file in the global commands directory (~/.boiler/commands/)")
+	Cmd.Flags().BoolVarP(&storeAsCommand, "command", "c", false, "Store .bl file in the global commands directory (~/.boiler/commands/)")
 	Cmd.Flags().BoolVar(&storeAsCommand, "cmd", false, "Alias for --command")
 	Cmd.Flags().BoolVarP(&storeForce, "force", "f", false, "Overwrite an existing global command (requires --command)")
 }
@@ -354,14 +355,48 @@ func storeCommand(path string) error {
 			return fmt.Errorf("source and destination are the same file")
 		}
 	}
-	if utils.FileExists(destPath) && !storeForce {
-		return fmt.Errorf(utils.ErrDestAlreadyExists, destPath)
-	}
-	if err := utils.CopyFile(path, destPath); err != nil {
-		return fmt.Errorf("failed to copy command: %w", err)
+	if storeForce {
+		if err := utils.CopyFile(path, destPath); err != nil {
+			return fmt.Errorf("failed to copy command: %w", err)
+		}
+	} else if err := copyNewCommand(path, destPath); err != nil {
+		return err
 	}
 
 	fmt.Printf("✓ Stored command '%s' at %s\n", filepath.Base(path), destPath)
 	logger.Info(fmt.Sprintf("Command stored: %s -> %s", path, destPath))
+	return nil
+}
+
+// copyNewCommand reserves the destination before copying so concurrent stores cannot replace it.
+func copyNewCommand(source, destination string) error {
+	in, err := os.Open(source)
+	if err != nil {
+		return fmt.Errorf("failed to open command: %w", err)
+	}
+	defer in.Close()
+	info, err := in.Stat()
+	if err != nil {
+		return fmt.Errorf("failed to inspect command: %w", err)
+	}
+	out, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE|os.O_EXCL, info.Mode().Perm())
+	if os.IsExist(err) {
+		return fmt.Errorf(utils.ErrDestAlreadyExists, destination)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to create command: %w", err)
+	}
+	_, copyErr := io.Copy(out, in)
+	modeErr := out.Chmod(info.Mode())
+	closeErr := out.Close()
+	if copyErr != nil {
+		return fmt.Errorf("failed to copy command: %w", copyErr)
+	}
+	if modeErr != nil {
+		return fmt.Errorf("failed to set command permissions: %w", modeErr)
+	}
+	if closeErr != nil {
+		return fmt.Errorf("failed to close command: %w", closeErr)
+	}
 	return nil
 }
