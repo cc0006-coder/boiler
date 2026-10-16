@@ -11,6 +11,8 @@ import (
 // ConfigureOutput applies the output preference before config loading and
 // command discovery, which can fail before Cobra parses persistent flags.
 // Cobra remains responsible for reporting invalid flags and argument values.
+// Environment propagation is deliberately separate because aliases are
+// expanded only after config loading.
 func ConfigureOutput(args []string) {
 	flags := pflag.NewFlagSet("output", pflag.ContinueOnError)
 	flags.SetOutput(io.Discard)
@@ -19,11 +21,17 @@ func ConfigureOutput(args []string) {
 	// Do not let help stop this preliminary scan before a trailing --no-color.
 	flags.BoolP("help", "h", false, "")
 	_ = flags.Parse(args)
+}
 
-	// Script commands are executed in child processes that inherit the current
-	// environment (see internal/engine/executor.go). Mirror the CLI choice there
-	// so nested commands honor --no-color too.
-	if flags.Changed("no-color") && ui.NoColor {
+// ApplyOutputToEnvironment propagates the final output preference to child
+// processes after command aliases have been expanded.
+func ApplyOutputToEnvironment() {
+	if ui.NoColor {
 		_ = os.Setenv("NO_COLOR", "1")
+		return
 	}
+
+	// Clear a value possibly written by an early scan whose meaning changed
+	// after alias expansion.
+	_ = os.Unsetenv("NO_COLOR")
 }

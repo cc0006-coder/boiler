@@ -2,8 +2,11 @@ package cli
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
+	aliascmd "github.com/rishiyaduwanshi/boiler/internal/cli/alias"
+	"github.com/rishiyaduwanshi/boiler/internal/config"
 	"github.com/rishiyaduwanshi/boiler/internal/ui"
 )
 
@@ -42,7 +45,7 @@ func TestConfigureOutputBeforeCommandDiscovery(t *testing.T) {
 	}
 }
 
-func TestConfigureOutputPropagatesNoColorToChildEnvironment(t *testing.T) {
+func TestConfigureOutputDoesNotPropagateUntilApplied(t *testing.T) {
 	t.Setenv("NO_COLOR", "")
 	old := ui.NoColor
 	ui.NoColor = false
@@ -50,7 +53,48 @@ func TestConfigureOutputPropagatesNoColorToChildEnvironment(t *testing.T) {
 
 	ConfigureOutput([]string{"--no-color"})
 
+	if !ui.NoColor {
+		t.Fatal("ConfigureOutput did not detect --no-color")
+	}
+	if got := os.Getenv("NO_COLOR"); got != "" {
+		t.Fatalf("early ConfigureOutput set NO_COLOR = %q, want empty", got)
+	}
+
+	ApplyOutputToEnvironment()
 	if got := os.Getenv("NO_COLOR"); got != "1" {
-		t.Fatalf("NO_COLOR = %q, want %q so script children inherit --no-color", got, "1")
+		t.Fatalf("NO_COLOR = %q, want %q after applying output", got, "1")
+	}
+}
+
+func TestApplyOutputToEnvironmentClearsStaleValueAfterAliasExpansion(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	old := ui.NoColor
+	ui.NoColor = false
+	t.Cleanup(func() { ui.NoColor = old })
+
+	cfg := config.DefaultConfig()
+	cfg.Aliases["find"] = "search --"
+	aliascmd.Setup(cfg, nil)
+	t.Cleanup(func() { aliascmd.Setup(nil, nil) })
+
+	original := []string{"find", "--no-color"}
+	ConfigureOutput(original)
+	if !ui.NoColor {
+		t.Fatal("early scan did not detect --no-color")
+	}
+
+	expanded := aliascmd.ExpandFirstCommandAlias(original)
+	wantExpanded := []string{"search", "--", "--no-color"}
+	if !reflect.DeepEqual(expanded, wantExpanded) {
+		t.Fatalf("ExpandFirstCommandAlias() = %v, want %v", expanded, wantExpanded)
+	}
+
+	ConfigureOutput(expanded)
+	if ui.NoColor {
+		t.Fatal("final scan treated --no-color after -- as a flag")
+	}
+	ApplyOutputToEnvironment()
+	if _, ok := os.LookupEnv("NO_COLOR"); ok {
+		t.Fatal("NO_COLOR remained set after alias expansion changed --no-color into a query")
 	}
 }

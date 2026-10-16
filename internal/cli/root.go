@@ -146,6 +146,7 @@ func Execute(m *config.Manager, log *utils.Logger) error {
 	rootCmd.SilenceErrors = true
 	args := aliascmd.ExpandFirstCommandAlias(os.Args[1:])
 	ConfigureOutput(args)
+	ApplyOutputToEnvironment()
 	rootCmd.SetArgs(args)
 	ensureCommandDocsNormalized()
 	return rootCmd.Execute()
