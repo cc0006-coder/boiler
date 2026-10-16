@@ -379,6 +379,9 @@ func copyNewCommand(source, destination string) error {
 	if err != nil {
 		return fmt.Errorf("failed to inspect command: %w", err)
 	}
+	if utils.IsDirectory(destination) {
+		return fmt.Errorf(utils.ErrDestAlreadyExists, destination)
+	}
 	out, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE|os.O_EXCL, info.Mode().Perm())
 	if os.IsExist(err) {
 		return fmt.Errorf(utils.ErrDestAlreadyExists, destination)
