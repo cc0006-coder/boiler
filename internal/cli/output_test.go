@@ -66,8 +66,20 @@ func TestConfigureOutputDoesNotPropagateUntilApplied(t *testing.T) {
 	}
 }
 
-func TestApplyOutputToEnvironmentClearsStaleValueAfterAliasExpansion(t *testing.T) {
-	t.Setenv("NO_COLOR", "")
+func TestApplyOutputToEnvironmentPreservesInheritedNoColor(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	old := ui.NoColor
+	ui.NoColor = false
+	t.Cleanup(func() { ui.NoColor = old })
+
+	ApplyOutputToEnvironment()
+	if got := os.Getenv("NO_COLOR"); got != "1" {
+		t.Fatalf("NO_COLOR = %q, want inherited value %q", got, "1")
+	}
+}
+
+func TestApplyOutputToEnvironmentPreservesInheritedValueAfterAliasExpansion(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
 	old := ui.NoColor
 	ui.NoColor = false
 	t.Cleanup(func() { ui.NoColor = old })
@@ -94,7 +106,7 @@ func TestApplyOutputToEnvironmentClearsStaleValueAfterAliasExpansion(t *testing.
 		t.Fatal("final scan treated --no-color after -- as a flag")
 	}
 	ApplyOutputToEnvironment()
-	if _, ok := os.LookupEnv("NO_COLOR"); ok {
-		t.Fatal("NO_COLOR remained set after alias expansion changed --no-color into a query")
+	if got := os.Getenv("NO_COLOR"); got != "1" {
+		t.Fatalf("NO_COLOR = %q, want inherited value %q after alias expansion", got, "1")
 	}
 }

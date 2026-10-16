@@ -24,14 +24,10 @@ func ConfigureOutput(args []string) {
 }
 
 // ApplyOutputToEnvironment propagates the final output preference to child
-// processes after command aliases have been expanded.
+// processes after command aliases have been expanded. Inherited NO_COLOR values
+// are preserved when no explicit opt-out is requested.
 func ApplyOutputToEnvironment() {
 	if ui.NoColor {
 		_ = os.Setenv("NO_COLOR", "1")
-		return
 	}
-
-	// Clear a value possibly written by an early scan whose meaning changed
-	// after alias expansion.
-	_ = os.Unsetenv("NO_COLOR")
 }
