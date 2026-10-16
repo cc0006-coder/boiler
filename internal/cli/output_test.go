@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"os"
 	"testing"
 
 	"github.com/rishiyaduwanshi/boiler/internal/ui"
@@ -8,7 +9,15 @@ import (
 
 func TestConfigureOutputBeforeCommandDiscovery(t *testing.T) {
 	old := ui.NoColor
-	t.Cleanup(func() { ui.NoColor = old })
+	oldNoColor, hadNoColor := os.LookupEnv("NO_COLOR")
+	t.Cleanup(func() {
+		ui.NoColor = old
+		if hadNoColor {
+			_ = os.Setenv("NO_COLOR", oldNoColor)
+		} else {
+			_ = os.Unsetenv("NO_COLOR")
+		}
+	})
 	for _, tc := range []struct {
 		name string
 		args []string
@@ -30,5 +39,18 @@ func TestConfigureOutputBeforeCommandDiscovery(t *testing.T) {
 				t.Fatalf("NoColor = %v, want %v", ui.NoColor, tc.want)
 			}
 		})
+	}
+}
+
+func TestConfigureOutputPropagatesNoColorToChildEnvironment(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	old := ui.NoColor
+	ui.NoColor = false
+	t.Cleanup(func() { ui.NoColor = old })
+
+	ConfigureOutput([]string{"--no-color"})
+
+	if got := os.Getenv("NO_COLOR"); got != "1" {
+		t.Fatalf("NO_COLOR = %q, want %q so script children inherit --no-color", got, "1")
 	}
 }

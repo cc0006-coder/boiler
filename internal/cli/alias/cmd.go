@@ -217,6 +217,17 @@ func ExpandFirstCommandAlias(args []string) []string {
 		return args
 	}
 
+	// Global output flags may appear before the command token. Keep them out of
+	// the alias input so they do not prevent expansion of the actual command.
+	leadingOutputFlags := 0
+	for leadingOutputFlags < len(args) && isLeadingOutputFlag(args[leadingOutputFlags]) {
+		leadingOutputFlags++
+	}
+	if leadingOutputFlags > 0 {
+		expanded := ExpandFirstCommandAlias(args[leadingOutputFlags:])
+		return append(append([]string(nil), args[:leadingOutputFlags]...), expanded...)
+	}
+
 	EnsureConfigAliases()
 	if len(cfg.Aliases) == 0 {
 		return args
@@ -298,6 +309,10 @@ func ExpandFirstCommandAlias(args []string) []string {
 	}
 
 	return expanded
+}
+
+func isLeadingOutputFlag(arg string) bool {
+	return arg == "--no-color" || strings.HasPrefix(arg, "--no-color=")
 }
 
 var (
