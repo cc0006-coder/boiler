@@ -60,6 +60,12 @@ func (s Style) render(w io.Writer, text string) string {
 	return text[:start] + s.style.Renderer(renderer).Render(body) + text[end:]
 }
 
+// RenderTo styles text for a specific output destination without writing it.
+// Use it when composing output that may go to a terminal, file, or buffer.
+func (s Style) RenderTo(w io.Writer, text string) string {
+	return s.render(w, text)
+}
+
 // Render styles a value destined for stdout, e.g. a path inside a message.
 func (s Style) Render(text string) string {
 	return s.render(os.Stdout, text)

@@ -165,6 +165,8 @@ func ensureCommandDocsNormalized() {
 }
 
 func init() {
+	configureHelp(rootCmd)
+
 	// Add version flag
 	rootCmd.Flags().BoolP("version", "v", false, "Show version information")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "V", false, "Enable verbose debug output")

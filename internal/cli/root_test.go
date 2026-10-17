@@ -40,6 +40,9 @@ func TestNoColorFlagIsInheritedAndParsedForHelp(t *testing.T) {
 	if !strings.Contains(out.String(), "--no-color") {
 		t.Fatalf("help does not document the flag: %s", out)
 	}
+	if got := strings.Count(out.String(), "  bl ls [flags]\n"); got != 1 {
+		t.Fatalf("got %d usage lines, want 1: %s", got, out)
+	}
 	if strings.Contains(out.String(), "\x1b") {
 		t.Fatal("help contains ANSI sequences")
 	}
