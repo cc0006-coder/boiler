@@ -47,11 +47,8 @@ bl clean [resource] [flags]
   -h, --help       help for clean
   -n, --snippets   Snippets only
   -k, --stacks     Stacks only
-```
 
-### Options inherited from parent commands
-
-```
+# global flags (inherited)
       --global     Force global scope for this command
       --local      Force local scope for this command
       --no-color   Disable colors and animated progress (also honors NO_COLOR)

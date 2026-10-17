@@ -37,11 +37,8 @@ bl var [name|name=value] [flags]
 ```
   -f, --force   Overwrite if already exists
   -h, --help    help for var
-```
 
-### Options inherited from parent commands
-
-```
+# global flags (inherited)
       --global     Force global scope for this command
       --local      Force local scope for this command
       --no-color   Disable colors and animated progress (also honors NO_COLOR)

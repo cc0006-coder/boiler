@@ -62,11 +62,8 @@ bl init [flags]
   -n, --snippet   Initialize as snippet
   -k, --stack     Initialize as stack
   -y, --yes       Skip prompts and use defaults
-```
 
-### Options inherited from parent commands
-
-```
+# global flags (inherited)
       --global     Force global scope for this command
       --local      Force local scope for this command
       --no-color   Disable colors and animated progress (also honors NO_COLOR)

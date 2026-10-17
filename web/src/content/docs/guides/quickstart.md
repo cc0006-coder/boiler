@@ -123,8 +123,8 @@ NO_COLOR=1 bl --help
 ```
 
 The website's command reference is generated from the same command definitions.
-It presents usage and examples in code blocks and flags under **Options** and
-**Options inherited from parent commands**, without terminal escape sequences.
+It presents usage and examples in code blocks and command-specific and inherited
+global flags together under **Options**, without terminal escape sequences.
 
 ## Next Steps
 
